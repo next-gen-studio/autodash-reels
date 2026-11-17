@@ -1,12 +1,20 @@
 # SAFE AREA (IG/TikTok/YouTube Shorts UI): banner text, stickers and card stay inside y=230..1480 and x=90..890 (see SAFE_AREA.md).
-import subprocess,sys,json
-src,out=sys.argv[1],sys.argv[2]
+# Per-video options (pick them to fit the video topic; see GUIDE.md rule 4):
+#   --badge FILE    pop-in badge sticker (make it with make_badge.py), default sticker_new.png
+#   --icon FILE     rising icon sticker, e.g. icons/fire.png, default sticker_spark.png
+#   --sfx-start / --sfx-badge / --sfx-icon / --sfx-card FILE   sound effects from sfx/, defaults whoosh/whoosh/pop/pop
+import subprocess,sys,json,argparse
+ap=argparse.ArgumentParser();ap.add_argument('src');ap.add_argument('out')
+ap.add_argument('--badge',default='sticker_new.png');ap.add_argument('--icon',default='sticker_spark.png')
+ap.add_argument('--sfx-start',default='whoosh.wav');ap.add_argument('--sfx-badge',default='whoosh.wav')
+ap.add_argument('--sfx-icon',default='pop.wav');ap.add_argument('--sfx-card',default='pop.wav')
+A=ap.parse_args();src,out=A.src,A.out
 D=float(subprocess.check_output(['ffprobe','-v','error','-show_entries','format=duration','-of','csv=p=0',src]).decode())
 D=round(D,2)
 tc=0.15; tstar=round(min(D*0.45,6),2)
 pulses=[1.2,tstar,round(D*0.5,2),tc]
 z="1.03+0.03*sin(2*PI*t/9)+"+"+".join(f"if(gte(t,{p}),0.05*exp(-7*(t-{p})),0)" for p in pulses)
-inputs=["-i",src]+sum([["-loop","1","-framerate","30","-t",str(D+1),"-i",f] for f in ["banner_tall.png","sticker_new.png","sticker_spark.png","lower.png"]],[])+["-i","music.wav","-i","whoosh.wav","-i","pop.wav"]
+inputs=["-i",src]+sum([["-loop","1","-framerate","30","-t",str(D+1),"-i",f] for f in ["banner_tall.png",A.badge,A.icon,"lower.png"]],[])+["-i","music.wav","-i",A.sfx_start,"-i",A.sfx_badge,"-i",A.sfx_icon,"-i",A.sfx_card]
 fc=[
  "[0:v]fps=30,scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1,eq=contrast=1.06:saturation=1.18,vignette=PI/5,fade=t=in:d=0.2[z]",
  "[1:v]format=rgba[ban]","[2:v]format=rgba[nw]",
@@ -19,11 +27,10 @@ fc=[
  f"[v4][bar]overlay=x='-W+W*t/{D}':y=H-14:shortest=1[v]",
  f"[0:a]aresample=48000,volume=1.0[a0]",
  f"[5:a]atrim=0:{D},afade=t=in:d=0.5,afade=t=out:st={D-1.5}:d=1.5,volume=0.12[mu]",
- "[6:a]asplit=2[w1][w2]","[7:a]asplit=2[p1][p2]",
- "[w1]adelay=30|30,volume=0.8[wa]",
- f"[w2]adelay=1200|1200,volume=0.8[wb]",
- f"[p1]adelay={int(tstar*1000)}|{int(tstar*1000)},volume=0.8[pa]",
- f"[p2]adelay={int(tc*1000)}|{int(tc*1000)},volume=0.8[pb]",
+ "[6:a]aresample=48000,adelay=30|30,volume=0.8[wa]",
+ f"[7:a]aresample=48000,adelay=1200|1200,volume=0.8[wb]",
+ f"[8:a]aresample=48000,adelay={int(tstar*1000)}|{int(tstar*1000)},volume=0.8[pa]",
+ f"[9:a]aresample=48000,adelay={int(tc*1000)}|{int(tc*1000)},volume=0.8[pb]",
  f"[a0][mu][wa][wb][pa][pb]amix=inputs=6:duration=first:normalize=0,alimiter=limit=0.95[a]"]
 cmd=["ffmpeg","-v","error","-y"]+inputs+["-filter_complex",";".join(fc),"-map","[v]","-map","[a]","-t",str(D),"-c:v","libx264","-preset","veryfast","-crf","20","-pix_fmt","yuv420p","-r","30","-c:a","aac","-b:a","160k","body.mp4"]
 r=subprocess.run(cmd,capture_output=True,text=True); print(r.stderr[-1200:])
