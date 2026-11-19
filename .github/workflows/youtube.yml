@@ -1,0 +1,30 @@
+name: YouTube Zernio
+# Posts YouTube Shorts via Zernio. Trigger: push of youtube/<tiktok_id>.json (request file).
+# Secret required: ZERNIO_KEY (repo Settings > Secrets and variables > Actions).
+on:
+  push:
+    branches: [main]
+    paths: ['youtube/*.json']
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: youtube-zernio
+  cancel-in-progress: false
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Post to YouTube via Zernio
+        env:
+          ZERNIO_KEY: ${{ secrets.ZERNIO_KEY }}
+        run: python3 youtube/zernio_post.py
+      - name: Commit log
+        run: |
+          git config user.name "autodash-bot"
+          git config user.email "autodash-bot@users.noreply.github.com"
+          git add youtube_log.txt
+          git diff --cached --quiet || { git commit -m "YouTube Zernio log [skip ci]" && git pull --rebase -q origin main && git push -q origin HEAD:main; }

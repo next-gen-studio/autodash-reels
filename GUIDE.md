@@ -21,3 +21,7 @@ Source: TikTok @car.widget. Goal: re-edit one NEW video per run, append the Car 
 10. Photo posts: build with `cd assets && python3 make_photo_reel.py OUT.mp4 "HOOK 1" "HOOK 2" AUDIO img1.jpg ...`. If TikTok cannot be fetched directly, the vidIQ tool vidiq_watch_shortform_content returns the slides of a /photo/ URL.
 11. At the end of EVERY run, send the finished video file to the user with SendUserFile (display: render) so they can watch it, together with the per-platform status.
 Touch only this repository. Never touch other repos.
+
+## YouTube via Zernio (user rule, 19 Nov 2026)
+Instagram + TikTok stay on Buffer. YouTube Shorts are NO LONGER posted through Buffer (Buffer hits its daily limit); only YouTube goes through Zernio, via the GitHub Actions workflow `.github/workflows/youtube.yml` which uses the repo secret `ZERNIO_KEY` (never print or commit the key).
+After the reel is pushed to main (raw URL 200): create `youtube/<tiktok_id>.json` with {"title": "<SEO title ending with #shorts, no < >>", "description": "<same caption as the other platforms, no URL>", "video_url": "https://raw.githubusercontent.com/next-gen-studio/autodash-reels/main/reels/<id>.mp4"}, commit + push it. The push runs the workflow (youtube/zernio_post.py: Zernio POST /posts, publishNow, categoryId 2, public, madeForKids false) and appends `OK <id> <youtube url>` or `HATA <id> <reason>` to youtube_log.txt. Pull and read youtube_log.txt (poll ~30 s, up to ~5 min) for the link. Add `"dry_run": true` to only test authentication.
