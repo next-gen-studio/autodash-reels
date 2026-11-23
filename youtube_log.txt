@@ -26,3 +26,5 @@
 2026-11-22T18:07:57Z DRY dryrun-test auth ok, youtube=carwidget
 2026-11-23T07:22:22Z OK 7680209393937321230 https://www.youtube.com/watch?v=1Dd67rQ-eW4
 2026-11-23T07:22:22Z DRY dryrun-test auth ok, youtube=carwidget
+2026-11-23T14:07:47Z HATA 7678164200190938381 'video_url'
+2026-11-23T14:07:47Z DRY dryrun-test auth ok, youtube=carwidget
